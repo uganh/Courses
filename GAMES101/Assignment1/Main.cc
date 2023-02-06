@@ -1,19 +1,22 @@
+#define _USE_MATH_DEFINES
+
 #include "Rasterizer.h"
 
 #include <Eigen/Eigen>
-
 #include <opencv2/opencv.hpp>
+
+#include <cmath>
 
 int main(int argc, const char* argv[]) {
   Rasterizer r(700, 700);
 
   /* Configurations */
 
-  float angle = 45.0;
+  float angle = 0.0f / 180.0f * M_PI;
 
   Eigen::Vector3f e = {0.0, 0.0, 5.0}; // Eye position
 
-  float fov = 45.0f; // Degree
+  float fov = 45.0f / 180.0f * M_PI;
   float aspectRatio = 1.0f;
   float zNear = 0.1f;
   float zFar = 50.0f;
@@ -47,17 +50,25 @@ int main(int argc, const char* argv[]) {
     Eigen::Matrix4f viewR = Eigen::Matrix4f::Identity();
     Eigen::Matrix4f view  = viewR * viewT;
 
-    Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4f projection;
+    // projection << 2.0 * zNear / (r - l), 0.0, (l + r) / (l - r), 0.0,
+    //               0.0, 2.0 * zNear / (t - b), (b + t) / (b - t), 0.0,
+    //               0.0, 0.0, (zFar + zNear) / (zFar - zNear), 2.0 * zNear * zFar / (zNear - zFar),
+    //               0.0, 0.0, 1.0, 0.0;
+    // t = zNear * tan(fov / 2.0);
+    // r = aspectRatio * t;
+    projection << 1.0 / (aspectRatio * std::tan(fov / 2.0)), 0.0, 0.0, 0.0,
+                  0.0, 1.0 / std::tan(fov / 2.0), 0.0, 0.0,
+                  0.0, 0.0, (zFar + zNear) / (zFar - zNear), 2.0 * zNear * zFar / (zNear - zFar),
+                  0.0, 0.0, 1.0, 0.0;
 
     Eigen::Matrix4f mvp = projection * view * model;
 
-    r.drawTriangle(
-      (mvp * a).head<3>(),
-      (mvp * b).head<3>(),
-      (mvp * c).head<3>(),
-      color);
+    Eigen::Vector4f Ma = mvp * a;
+    Eigen::Vector4f Mb = mvp * b;
+    Eigen::Vector4f Mc = mvp * c;
 
-    // r.drawLine(45, 39, 605, 100, Eigen::Vector3f(255.0, 255.0, 0.0));
+    r.drawTriangle(Ma.head<3>() / Ma.w(), Mb.head<3>() / Mb.w(), Mc.head<3>() / Mc.w(), color);
 
     cv::Mat image(700, 700, CV_32FC3, r.getFrameBuffer().data());
     image.convertTo(image, CV_8UC3, 1.0f);
@@ -67,11 +78,12 @@ int main(int argc, const char* argv[]) {
 
     switch (key) {
       case 'a':
+        angle += 5.0f / 180.0f * M_PI;
         break;
       case 'd':
+        angle -= 5.0f / 180.0f * M_PI;
         break;
     }
-
   }
 
   return 0;
