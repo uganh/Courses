@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-Rasterizer::Rasterizer(unsigned int width, unsigned int height)
+Rasterizer::Rasterizer(int width, int height)
     : width(width), height(height) {
   frameBuffer.resize(width * height);
   depthBuffer.resize(width * height);
@@ -84,12 +84,12 @@ void Rasterizer::drawLine(int x0, int y0, int x1, int y1, const Eigen::Vector3f 
 
 void Rasterizer::drawTriangle(const Eigen::Vector3f &a, const Eigen::Vector3f &b, const Eigen::Vector3f &c, const Eigen::Vector3f &color) {
   /* Viewport transformation */
-  int ax = 0.5 * width  * (a.x() + 1.0);
-  int ay = 0.5 * height * (a.y() + 1.0);
-  int bx = 0.5 * width  * (b.x() + 1.0);
-  int by = 0.5 * height * (b.y() + 1.0);
-  int cx = 0.5 * width  * (c.x() + 1.0);
-  int cy = 0.5 * height * (c.y() + 1.0);
+  int ax = static_cast<int>(0.5f * width  * (a.x() + 1.0f));
+  int ay = static_cast<int>(0.5f * height * (a.y() + 1.0f));
+  int bx = static_cast<int>(0.5f * width  * (b.x() + 1.0f));
+  int by = static_cast<int>(0.5f * height * (b.y() + 1.0f));
+  int cx = static_cast<int>(0.5f * width  * (c.x() + 1.0f));
+  int cy = static_cast<int>(0.5f * height * (c.y() + 1.0f));
 
   drawLine(ax, ay, bx, by, color);
   drawLine(bx, by, cx, cy, color);

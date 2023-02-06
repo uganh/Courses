@@ -1,5 +1,5 @@
-#include "eigen3/Eigen/Core"
-#include "eigen3/Eigen/Dense"
+#include <Eigen/Core>
+#include <Eigen/Dense>
 
 #include <cmath>
 #include <iostream>
@@ -58,7 +58,7 @@ int main(void) {
   Eigen::Vector3f P(2.0f, 1.0f, 1.0f);
 
   Eigen::Matrix3f R, T;
-  float alpha = 45.0f / 180.0f * std::acos(-1.0);
+  float alpha = 45.0f / 180.0f * std::acos(-1.0f);
   R << std::cos(alpha), -std::sin(alpha), 0.0, std::sin(alpha), std::cos(alpha), 0.0, 0.0, 0.0, 1.0;
   T << 1.0, 0.0, 1.0, 0.0, 1.0, 2.0, 0.0, 0.0, 1.0;
 

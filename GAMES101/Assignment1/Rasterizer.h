@@ -1,18 +1,18 @@
 #pragma once
 
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Eigen>
 
 #include <vector>
 
 class Rasterizer {
-  unsigned int width;
-  unsigned int height;
+  int width;
+  int height;
 
   std::vector<Eigen::Vector3f> frameBuffer;
   std::vector<float> depthBuffer;
 
 public:
-  Rasterizer(unsigned int width, unsigned int height);
+  Rasterizer(int width, int height);
 
   void clearColorBuffer(void);
   void clearDepthBuffer(void);

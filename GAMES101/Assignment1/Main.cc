@@ -1,6 +1,6 @@
 #include "Rasterizer.h"
 
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Eigen>
 
 #include <opencv2/opencv.hpp>
 
@@ -13,10 +13,10 @@ int main(int argc, const char* argv[]) {
 
   Eigen::Vector3f e = {0.0, 0.0, 5.0}; // Eye position
 
-  float fov = 45.0; // Degree
-  float aspectRatio = 1.0;
-  float zNear = 0.1;
-  float zFar = 50.0;
+  float fov = 45.0f; // Degree
+  float aspectRatio = 1.0f;
+  float zNear = 0.1f;
+  float zFar = 50.0f;
 
   Eigen::Vector3f color = {255.0, 255.0, 255.0};
 
