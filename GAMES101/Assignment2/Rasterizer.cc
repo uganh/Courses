@@ -61,35 +61,31 @@ void Rasterizer::setRotation(float yaw, float pitch, float roll) {
 }
 
 void Rasterizer::setCamera(const Eigen::Vector3f &eye) {
-    Eigen::Matrix4f viewT;
-    viewT << 1.0, 0.0, 0.0, -eye.x(),
-             0.0, 1.0, 0.0, -eye.y(),
-             0.0, 0.0, 1.0, -eye.z(),
-             0.0, 0.0, 0.0, 1.0;
-    Eigen::Matrix4f viewR = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4f T_view;
+    T_view << 1.0f, 0.0f, 0.0f, -eye.x(),
+              0.0f, 1.0f, 0.0f, -eye.y(),
+              0.0f, 0.0f, 1.0f, -eye.z(),
+              0.0f, 0.0f, 0.0f,     1.0f;
+    Eigen::Matrix4f R_view = Eigen::Matrix4f::Identity();
     
-    viewMatrix = viewR * viewT;
+    viewMatrix = R_view * T_view;
 }
 
 void Rasterizer::setPerspectiveProjection(float fov, float aspectRatio, float zNear, float zFar) {
   /* 
-   * 
-   * 
-   * 2.0 * zNear / (r - l),                   0.0,                      (l + r) / (l - r),                                 0.0,
-   *                   0.0, 2.0 * zNear / (t - b),                      (b + t) / (b - t),                                 0.0,
-   *                   0.0,                   0.0, 3.0f * (zNear + zFar) / (zNear - zFar), 2.0 * zNear * zFar / (zNear - zFar),
-   *                   0.0,                   0.0,                                    1.0,                                 0.0;
+   * 2.0 * zNear / (r - l),                   0.0,               (l + r) / (l - r),                                 0.0,
+   *                   0.0, 2.0 * zNear / (t - b),               (b + t) / (b - t),                                 0.0,
+   *                   0.0,                   0.0, (zFar + zNear) / (zFar - zNear), 2.0 * zNear * zFar / (zFar - zNear),
+   *                   0.0,                   0.0,                            -1.0,                                 0.0;
    * 
    * t = zNear * tan(fov / 2.0);
    * r = aspectRatio * t;
    */
-  projectionMatrix << 1.0f / (aspectRatio * std::tan(fov / 2.0f)),                        0.0f,                                   0.0f,                                 0.0f,
-                                                             0.0f, 1.0f / std::tan(fov / 2.0f),                                   0.0f,                                 0.0f,
-                                                             0.0f,                        0.0f, 3.0f * (zNear + zFar) / (zNear - zFar), 2.0f * zNear * zFar / (zNear - zFar),
-                                                             0.0f,                        0.0f,                                  -1.0f,                                 0.0f;
+  projectionMatrix << 1.0f / (aspectRatio * std::tan(fov / 2.0f)),                        0.0f,                            0.0f,                                 0.0f,
+                                                             0.0f, 1.0f / std::tan(fov / 2.0f),                            0.0f,                                 0.0f,
+                                                             0.0f,                        0.0f, (zFar + zNear) / (zFar - zNear), 2.0f * zNear * zFar / (zFar - zNear),
+                                                             0.0f,                        0.0f,                           -1.0f,                                 0.0f;
 }
-
-#include <iostream>
 
 void Rasterizer::drawTriangle(const std::vector<Eigen::Vector3f> &vertices,
                               const std::vector<Eigen::Vector3f> &colors,
@@ -102,9 +98,6 @@ void Rasterizer::drawTriangle(const std::vector<Eigen::Vector3f> &vertices,
       processed_vertices[triangleIndices[1]],
       processed_vertices[triangleIndices[2]]
     };
-
-    std::cout << "===\n" << vertices[triangleIndices[0]] << "\n--\n" << processed_vertices[triangleIndices[0]] << std::endl;
-
 
     std::array<Eigen::Vector3f, 3> triangleColors = {
       colors[triangleIndices[0]],
@@ -146,10 +139,6 @@ void Rasterizer::rasterizeTriangle(const std::array<Eigen::Vector3f, 3> &triangl
   int y_min = std::max(static_cast<int>(y_min_f), 0);
   int y_max = std::min(static_cast<int>(y_max_f + 1.0), height);
 
-  static int count = 0;
-
-  bool first = true;
-
   for (int x = x_min; x < x_max; ++x) {
     for (int y = y_min; y < y_max; ++y) {
       float px = x + 0.5f;
@@ -162,11 +151,6 @@ void Rasterizer::rasterizeTriangle(const std::array<Eigen::Vector3f, 3> &triangl
           Eigen::Vector3f color = w[0] * colors[0] + w[1] * colors[1] + w[2] * colors[2];
           setPixel(x, y, color);
           depthBuffer[index] = z_interpolated;
-          if (first) {
-            std::cout << count << ": " << triangle[0].z() << ", " << z_interpolated << std::endl;
-            count++;
-            first = false;
-          }
         }
       }
     }
