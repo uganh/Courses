@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 add_executable(Rasterizer
   Main.cc
+  Mesh.cc
   Mesh.h
 )
 target_include_directories(Rasterizer PRIVATE ${EIGEN3_INCLUDE_DIR} ${OpenCV_INCLUDE_DIRS})
