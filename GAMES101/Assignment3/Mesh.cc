@@ -3,6 +3,20 @@
 #include <fstream>
 #include <sstream>
 
+std::vector<Triangle> Mesh::toTriangleList(void) const {
+  std::vector<Triangle> triangles;
+  for (size_t i = 0; i < vertexIndices.size(); i += 3) {
+    Triangle t;
+    for (int j = 0; j < 3; ++j) {
+      t.vertices[j]  = vertices[vertexIndices[i + j]].p;
+      t.texcoords[j] = vertices[vertexIndices[i + j]].uv;
+      t.normals[j]   = vertices[vertexIndices[i + j]].n;
+    }
+    triangles.push_back(t);
+  }
+  return triangles;
+}
+
 bool Mesh::importObj(const std::string &path) {
   std::ifstream file;
   file.open(path, std::ios::in);
@@ -18,7 +32,7 @@ bool Mesh::importObj(const std::string &path) {
   float u, v;
 
   std::vector<Eigen::Vector3f> positions;
-  std::vector<Eigen::Vector2f> texCoords;
+  std::vector<Eigen::Vector2f> texcoords;
   std::vector<Eigen::Vector3f> normals;
 
   while (std::getline(file, line)) {
@@ -34,7 +48,7 @@ bool Mesh::importObj(const std::string &path) {
       } else if (t == "vt") {
         // Vertex texture coordinate
         iss >> u >> v;
-        texCoords.push_back({ u, v });
+        texcoords.push_back({ u, v });
       } else if (t == "vn") {
         // Vertex normal
         iss >> x >> y >> z;
@@ -62,9 +76,9 @@ bool Mesh::importObj(const std::string &path) {
             if (sep1 + 1 != sep2) {
               int vti = std::stoi(part.substr(sep1 + 1));
               if (vti < 0)
-                vertex.uv = texCoords[texCoords.size() - vti];
+                vertex.uv = texcoords[texcoords.size() - vti];
               else
-                vertex.uv = texCoords[vti - 1];
+                vertex.uv = texcoords[vti - 1];
             } else {
               vertex.uv = { 0.0f, 0.0f };
             }
@@ -84,9 +98,9 @@ bool Mesh::importObj(const std::string &path) {
 
         if (verticesCount >= 3) {
           for (int i = 2; i < verticesCount; ++i) {
-            indices.push_back(lastVerticesCount + 0);
-            indices.push_back(lastVerticesCount + i - 1);
-            indices.push_back(lastVerticesCount + i);
+            vertexIndices.push_back(lastVerticesCount + 0);
+            vertexIndices.push_back(lastVerticesCount + i - 1);
+            vertexIndices.push_back(lastVerticesCount + i);
           }
         }
       } else if (t == "usemtl") {
@@ -103,7 +117,7 @@ bool Mesh::importObj(const std::string &path) {
   
 failure:
   vertices.clear();
-  indices.clear();
+  vertexIndices.clear();
 
   return false;
 }

@@ -18,8 +18,7 @@ class Rasterizer {
 public:
   Rasterizer(int width, int height);
 
-  void clearColorBuffer(void);
-  void clearDepthBuffer(void);
+  void clearBuffer(void);
 
   void setRotation(float yaw, float pitch, float roll);
 
@@ -27,20 +26,18 @@ public:
 
   void setPerspectiveProjection(float fov, float aspectRatio, float zNear, float zFar);
 
-  void drawTriangle(const std::vector<Eigen::Vector3f> &vertices,
-                    const std::vector<Eigen::Vector3f> &colors,
-                    const std::vector<Eigen::Vector3i> &indices);
+  void draw(const std::vector<Triangle> &triangles);
 
   std::vector<Eigen::Vector3f> &getFrameBuffer(void) {
     return frameBuffer;
   }
 
+  const std::vector<Eigen::Vector3f> &getFrameBuffer(void) const {
+    return frameBuffer;
+  }
+
 private:
-  std::vector<Eigen::Vector3f> processVertices(const std::vector<Eigen::Vector3f> &vertices) const;
-
-  void rasterizeTriangle(const std::array<Eigen::Vector3f, 3> &vertices, const std::array<Eigen::Vector3f, 3> &colors);
-
-  void drawLine(int x0, int y0, int x1, int y1, const Eigen::Vector3f &color);
+  void rasterizeTriangle(const std::array<Eigen::Vector4f, 3> &vertices);
 
   void setPixel(int x, int y, const Eigen::Vector3f &color);
 };
