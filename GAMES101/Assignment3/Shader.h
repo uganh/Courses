@@ -4,11 +4,14 @@
 
 struct fragment_shader_payload {
   Eigen::Vector3f shadingpoint;
+  
   Eigen::Vector3f normal;
+
+  Eigen::Vector3f color;
 
   Eigen::Vector2f texcoords;
 
-  class Texture* texture;
+  const class Texture* texture;
 
   fragment_shader_payload(void) : texture(nullptr) {}
 };

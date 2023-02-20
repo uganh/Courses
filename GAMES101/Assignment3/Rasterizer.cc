@@ -84,7 +84,7 @@ void Rasterizer::setPerspectiveProjection(float fov, float aspect_ratio, float z
                                                              0.0f,                        0.0f,                           -1.0f,                                 0.0f;
 }
 
-void Rasterizer::draw(const std::vector<Triangle> &triangles) {
+void Rasterizer::draw(const std::vector<Triangle> &triangles, const Texture *texture) {
   Eigen::Matrix4f mv = viewMatrix * modelMatrix;
   Eigen::Matrix4f mvp = projectionMatrix * mv;
 
@@ -125,11 +125,11 @@ void Rasterizer::draw(const std::vector<Triangle> &triangles) {
       t.normals[i] = (mv * normals[i]).head<3>();
     }
 
-    rasterizeTriangle(t, viewspacePos);
+    rasterizeTriangle(t, viewspacePos, texture);
   }
 }
 
-void Rasterizer::rasterizeTriangle(const Triangle &t, const std::array<Eigen::Vector3f, 3> &viewspacePos) {
+void Rasterizer::rasterizeTriangle(const Triangle &t, const std::array<Eigen::Vector3f, 3> &viewspacePos, const Texture *texture) {
   float x_min_f = std::min(std::min(t.vertices[0].x(), t.vertices[1].x()), t.vertices[2].x());
   float x_max_f = std::max(std::max(t.vertices[0].x(), t.vertices[1].x()), t.vertices[2].x());
   float y_min_f = std::min(std::min(t.vertices[0].y(), t.vertices[1].y()), t.vertices[2].y());
@@ -166,7 +166,9 @@ void Rasterizer::rasterizeTriangle(const Triangle &t, const std::array<Eigen::Ve
           fragment_shader_payload payload;
           payload.shadingpoint = interpolated_shadingpoint;
           payload.normal = interpolated_normal;
+          payload.color = { 0.5804f, 0.4745f, 0.3608f };
           payload.texcoords = interpolated_texcoords;
+          payload.texture = texture;
 
           setPixel(x, y, fragmentShader(payload));
 

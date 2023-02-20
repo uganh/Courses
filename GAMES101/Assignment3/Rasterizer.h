@@ -34,7 +34,7 @@ public:
     fragmentShader = fragShader;
   }
 
-  void draw(const std::vector<Triangle> &triangles);
+  void draw(const std::vector<Triangle> &triangles, const class Texture *texture = nullptr);
 
   std::vector<Eigen::Vector3f> &getFrameBuffer(void) {
     return frameBuffer;
@@ -45,7 +45,7 @@ public:
   }
 
 private:
-  void rasterizeTriangle(const Triangle& t, const std::array<Eigen::Vector3f, 3>& viewspacePos);
+  void rasterizeTriangle(const Triangle& t, const std::array<Eigen::Vector3f, 3>& viewspacePos, const class Texture *texture);
 
   void setPixel(int x, int y, const Eigen::Vector3f &color);
 };
