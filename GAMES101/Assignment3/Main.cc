@@ -7,6 +7,55 @@
 
 #include <cmath>
 #include <iostream>
+#include <vector>
+
+struct Light {
+  Eigen::Vector3f position;
+  Eigen::Vector3f intensity;
+};
+
+Eigen::Vector3f normal_fragment_shader(const fragment_shader_payload& payload) {
+  return (payload.normal.normalized() + Eigen::Vector3f(1.0f, 1.0f, 1.0f)) * 255.0f / 2.0f;
+}
+
+class PhongFragmentShader {
+  Eigen::Vector3f ka;
+  Eigen::Vector3f kd;
+  Eigen::Vector3f ks;
+
+  float p;
+
+  Eigen::Vector3f I_a;
+
+  Eigen::Vector3f eyePos;
+
+  std::vector<Light> lights;
+
+public:
+
+  Eigen::Vector3f operator()(const fragment_shader_payload &payload) {
+    Eigen::Vector3f color;
+
+    for (auto &light : lights) {
+      
+    }
+  }
+
+};
+
+Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload) {
+  
+
+  return Eigen::Vector3f(255.0f, 255.0f, 255.0f);
+}
+
+Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload) {
+  Eigen::Vector3f ka = Eigen::Vector3f(0.005, 0.005, 0.005);
+  // Eigen::Vector3f kd = payload.color;
+  Eigen::Vector3f ks = Eigen::Vector3f(0.7937, 0.7937, 0.7937);
+
+  return Eigen::Vector3f(255.0f, 255.0f, 255.0f);
+}
 
 int main(int argc, const char* argv[]) {
   Mesh mesh;
@@ -18,10 +67,12 @@ int main(int argc, const char* argv[]) {
 
     Rasterizer r(700, 700);
 
+    r.setFragmentShader(normal_fragment_shader);
+
     r.clearBuffer();
     
-    r.setRotation(0.0f, 0.0f, 140.0f / 180.0f * M_PI);
-    r.setCamera({0.0f, 0.0f, 10.0f});
+    r.setRotation(140.0f / 180.0f * M_PI, 0.0f, 0.0f);
+    r.setCamera({ 0.0f, 0.0f, 10.0f });
     r.setPerspectiveProjection(45.0f / 180.0f * M_PI, 1.0f, 0.1f, 50.0f);
 
     r.draw(mesh.toTriangleList());

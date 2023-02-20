@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Shader.h"
+
 #include <Eigen/Eigen>
 
 #include <vector>
@@ -15,6 +17,8 @@ class Rasterizer {
   Eigen::Matrix4f viewMatrix;
   Eigen::Matrix4f projectionMatrix;
 
+  std::function<fragment_shader_signature> fragmentShader;
+
 public:
   Rasterizer(int width, int height);
 
@@ -24,7 +28,11 @@ public:
 
   void setCamera(const Eigen::Vector3f &eye);
 
-  void setPerspectiveProjection(float fov, float aspectRatio, float zNear, float zFar);
+  void setPerspectiveProjection(float fov, float aspect_ratio, float zNear, float zFar);
+
+  void setFragmentShader(std::function<fragment_shader_signature> fragShader) {
+    fragmentShader = fragShader;
+  }
 
   void draw(const std::vector<Triangle> &triangles);
 
@@ -37,7 +45,7 @@ public:
   }
 
 private:
-  void rasterizeTriangle(const std::array<Eigen::Vector4f, 3> &vertices);
+  void rasterizeTriangle(const Triangle& t, const std::array<Eigen::Vector3f, 3>& viewspacePos);
 
   void setPixel(int x, int y, const Eigen::Vector3f &color);
 };

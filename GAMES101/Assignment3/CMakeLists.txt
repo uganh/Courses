@@ -12,6 +12,8 @@ add_executable(Rasterizer
   Mesh.h
   Rasterizer.cc
   Rasterizer.h
+  Texture.cc
+  Texture.h
 )
 target_include_directories(Rasterizer PRIVATE ${EIGEN3_INCLUDE_DIR} ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(Rasterizer PRIVATE ${OpenCV_LIBRARIES})

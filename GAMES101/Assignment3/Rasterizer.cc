@@ -1,15 +1,16 @@
 #include "Mesh.h"
 #include "Rasterizer.h"
+#include "Shader.h"
 
 #include <cmath>
 
-static bool insideTriangle(float x, float y, const std::array<Eigen::Vector4f, 3> &t) {
+static bool insideTriangle(float x, float y, const Eigen::Vector3f *t) {
   return (t[1].x() - t[0].x()) * (y - t[0].y()) - (t[1].y() - t[0].y()) * (x - t[0].x()) > 0.0f &&
          (t[2].x() - t[1].x()) * (y - t[1].y()) - (t[2].y() - t[1].y()) * (x - t[1].x()) > 0.0f &&
          (t[0].x() - t[2].x()) * (y - t[2].y()) - (t[0].y() - t[2].y()) * (x - t[2].x()) > 0.0f;
 }
 
-static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const std::array<Eigen::Vector4f, 3> &t) {
+static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Eigen::Vector3f *t) {
   float d = t[0].x() * (t[1].y() - t[2].y()) + t[1].x() * (t[2].y() - t[0].y())  + t[2].x() * (t[0].y() - t[1].y());
   return {
     (x * (t[1].y() - t[2].y()) + t[1].x() * (t[2].y() - y)  + t[2].x() * (y - t[1].y())) / d,
@@ -67,7 +68,7 @@ void Rasterizer::setCamera(const Eigen::Vector3f &eye) {
   viewMatrix = R_view * T_view;
 }
 
-void Rasterizer::setPerspectiveProjection(float fov, float aspectRatio, float zNear, float zFar) {
+void Rasterizer::setPerspectiveProjection(float fov, float aspect_ratio, float zNear, float zFar) {
   /* 
    * 2.0 * zNear / (r - l),                   0.0,               (l + r) / (l - r),                                 0.0,
    *                   0.0, 2.0 * zNear / (t - b),               (b + t) / (b - t),                                 0.0,
@@ -75,50 +76,64 @@ void Rasterizer::setPerspectiveProjection(float fov, float aspectRatio, float zN
    *                   0.0,                   0.0,                            -1.0,                                 0.0;
    * 
    * t = zNear * tan(fov / 2.0);
-   * r = aspectRatio * t;
+   * r = aspect_ratio * t;
    */
-  projectionMatrix << 1.0f / (aspectRatio * std::tan(fov / 2.0f)),                        0.0f,                            0.0f,                                 0.0f,
+  projectionMatrix << 1.0f / (aspect_ratio * std::tan(fov / 2.0f)),                        0.0f,                            0.0f,                                 0.0f,
                                                              0.0f, 1.0f / std::tan(fov / 2.0f),                            0.0f,                                 0.0f,
                                                              0.0f,                        0.0f, (zFar + zNear) / (zFar - zNear), 2.0f * zNear * zFar / (zFar - zNear),
                                                              0.0f,                        0.0f,                           -1.0f,                                 0.0f;
 }
 
 void Rasterizer::draw(const std::vector<Triangle> &triangles) {
-  // Eigen::Matrix4f mv = viewMatrix * modelMatrix;
+  Eigen::Matrix4f mv = viewMatrix * modelMatrix;
+  Eigen::Matrix4f mvp = projectionMatrix * mv;
 
-  Eigen::Matrix4f mvp = projectionMatrix * viewMatrix * modelMatrix;
-
-  for (const auto &t : triangles) {
+  for (const auto &triangle : triangles) {
     std::array<Eigen::Vector4f, 3> vertices = {
-      Eigen::Vector4f(t.vertices[0].x(), t.vertices[0].y(), t.vertices[0].z(), 1.0f),
-      Eigen::Vector4f(t.vertices[1].x(), t.vertices[1].y(), t.vertices[1].z(), 1.0f),
-      Eigen::Vector4f(t.vertices[2].x(), t.vertices[2].y(), t.vertices[2].z(), 1.0f),
+      Eigen::Vector4f(triangle.vertices[0].x(), triangle.vertices[0].y(), triangle.vertices[0].z(), 1.0f),
+      Eigen::Vector4f(triangle.vertices[1].x(), triangle.vertices[1].y(), triangle.vertices[1].z(), 1.0f),
+      Eigen::Vector4f(triangle.vertices[2].x(), triangle.vertices[2].y(), triangle.vertices[2].z(), 1.0f),
     };
 
-    for (auto &v : vertices) {
-      v = mvp * v;
+    std::array<Eigen::Vector4f, 3> normals = {
+      Eigen::Vector4f(triangle.normals[0].x(), triangle.normals[0].y(), triangle.normals[0].z(), 0.0f),
+      Eigen::Vector4f(triangle.normals[1].x(), triangle.normals[1].y(), triangle.normals[1].z(), 0.0f),
+      Eigen::Vector4f(triangle.normals[2].x(), triangle.normals[2].y(), triangle.normals[2].z(), 0.0f),
+    };
+
+    Triangle t;
+    std::array<Eigen::Vector3f, 3> viewspacePos;
+
+    for (int i = 0; i < 3; ++i) {
+      viewspacePos[i] = (mv * vertices[i]).head<3>();
+
+      vertices[i] = mvp * vertices[i];
 
       // Homogeneous division
-      v.x() /= v.w();
-      v.y() /= v.w();
-      v.z() /= v.w();
+      vertices[i].x() /= vertices[i].w();
+      vertices[i].y() /= vertices[i].w();
 
       // Viewport transformation
-      v.x() = 0.5f * width  * (v.x() + 1.0f);
-      v.y() = 0.5f * height * (v.y() + 1.0f);
+      t.vertices[i] = {
+        0.5f * width  * (vertices[i].x() + 1.0f),
+        0.5f * height * (vertices[i].y() + 1.0f),
+        vertices[i].w(),
+      };
+
+      t.texcoords[i] = triangle.texcoords[i];
+
+      t.normals[i] = (mv * normals[i]).head<3>();
     }
 
-    // @todo Transform normals
-
-    rasterizeTriangle(vertices);
+    rasterizeTriangle(t, viewspacePos);
   }
 }
 
-void Rasterizer::rasterizeTriangle(const std::array<Eigen::Vector4f, 3> &vertices) {
-  float x_min_f = std::min(std::min(vertices[0].x(), vertices[1].x()), vertices[2].x());
-  float x_max_f = std::max(std::max(vertices[0].x(), vertices[1].x()), vertices[2].x());
-  float y_min_f = std::min(std::min(vertices[0].y(), vertices[1].y()), vertices[2].y());
-  float y_max_f = std::max(std::max(vertices[0].y(), vertices[1].y()), vertices[2].y());
+void Rasterizer::rasterizeTriangle(const Triangle &t, const std::array<Eigen::Vector3f, 3> &viewspacePos) {
+  float x_min_f = std::min(std::min(t.vertices[0].x(), t.vertices[1].x()), t.vertices[2].x());
+  float x_max_f = std::max(std::max(t.vertices[0].x(), t.vertices[1].x()), t.vertices[2].x());
+  float y_min_f = std::min(std::min(t.vertices[0].y(), t.vertices[1].y()), t.vertices[2].y());
+  float y_max_f = std::max(std::max(t.vertices[0].y(), t.vertices[1].y()), t.vertices[2].y());
 
   int x_min = std::max(static_cast<int>(x_min_f), 0);
   int x_max = std::min(static_cast<int>(x_max_f + 1.0), width);
@@ -130,24 +145,30 @@ void Rasterizer::rasterizeTriangle(const std::array<Eigen::Vector4f, 3> &vertice
       float px = x + 0.5;
       float py = y + 0.5;
 
-      if (insideTriangle(px, py, vertices)) {
-        auto [alpha, beta, gamma] = computeBarycentric2D(px, py, vertices);
+      if (insideTriangle(px, py, t.vertices)) {
+        auto [alpha, beta, gamma] = computeBarycentric2D(px, py, t.vertices);
 
         /*
-         * vertices[i].w() is the vertex view space depth value z.
+         * t.vertices[i].z() is the vertex view space depth value z.
          * interpolated_z is interpolated view space depth for the current pixel
          */
-        float interpolated_z = 1.0f / (alpha / vertices[0].w() + beta / vertices[1].w() + gamma / vertices[2].w());
+        float interpolated_z = 1.0f / (alpha / t.vertices[0].z() + beta / t.vertices[1].z() + gamma / t.vertices[2].z());
 
         int index = (height - y - 1) * width + x;
         if (interpolated_z < depthBuffer[index]) {
-          setPixel(x, y, { 148.0f, 121.0f, 92.0f }); // @todo
+          /*
+           * Interpolate the attributes: interpolated_? = (alpha * ?[0] / vertices[0].w() + beta * ?[1] / vertices[1].w() + gamma * ?[2] / vertices[2].w()) * interpolated_z;
+           */
+          Eigen::Vector3f interpolated_shadingpoint = (alpha * viewspacePos[0] / t.vertices[0].z() + beta * viewspacePos[1] / t.vertices[1].z() + gamma * viewspacePos[2] / t.vertices[2].z()) * interpolated_z;
+          Eigen::Vector3f interpolated_normal = (alpha * t.normals[0] / t.vertices[0].z() + beta * t.normals[1] / t.vertices[1].z() + gamma * t.normals[2] / t.vertices[2].z()) * interpolated_z;
+          Eigen::Vector2f interpolated_texcoords = (alpha * t.texcoords[0] / t.vertices[0].z() + beta * t.texcoords[1] / t.vertices[1].z() + gamma * t.texcoords[2] / t.vertices[2].z()) * interpolated_z;
 
-          // @todo Interpolate the attributes
-          // interpolated_color
-          // interpolated_normal
-          // interpolated_texcoords
-          // interpolated_shadingcoords
+          fragment_shader_payload payload;
+          payload.shadingpoint = interpolated_shadingpoint;
+          payload.normal = interpolated_normal;
+          payload.texcoords = interpolated_texcoords;
+
+          setPixel(x, y, fragmentShader(payload));
 
           depthBuffer[index] = interpolated_z;
         }

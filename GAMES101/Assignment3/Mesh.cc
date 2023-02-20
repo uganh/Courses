@@ -68,7 +68,7 @@ bool Mesh::importObj(const std::string &path) {
           else
             vertex.p = positions[vi - 1];
 
-          size_t sep1 = part.find('/', sep1 + 1);
+          size_t sep1 = part.find('/');
 
           if (sep1 != std::string::npos) {
             size_t sep2 = part.find('/', sep1 + 1);
